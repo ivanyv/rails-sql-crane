@@ -33,28 +33,30 @@ CREATE TRIGGER update_posts_comments_count
 
 -- Test Cases:
 -- http://www.sqlfiddle.com/#!15/88019/1
+CREATE OR REPLACE FUNCTION assert_equal(a varchar, b varchar) RETURNS varchar AS $$
+  BEGIN
+    IF (a <> b) THEN
+      RAISE EXCEPTION '% not equal to %', a, b;
+    END IF;
+    RETURN 'SUCCESS';
+  END
+$$ LANGUAGE plpgsql;
 
 INSERT INTO posts (id, comments_count) VALUES (1, 0);
 INSERT INTO posts (id, comments_count) VALUES (2, 0);
 INSERT INTO posts (id, comments_count) VALUES (3, 0);
 INSERT INTO comments (id, post_id) VALUES (1, 1);
 INSERT INTO comments (id, post_id) VALUES (2, 2);
-SELECT * FROM posts ORDER BY id; -- 1, 1, 0
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 1)::varchar, '1');
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 2)::varchar, '1');
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 3)::varchar, '0');
+
 DELETE FROM comments WHERE id = 1;
-SELECT * FROM posts ORDER BY id; -- 0, 1, 0
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 1)::varchar, '0');
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 2)::varchar, '1');
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 3)::varchar, '0');
+
 UPDATE comments SET post_id = 3 WHERE post_id = 2;
-SELECT * FROM posts ORDER BY id; -- 0, 0, 1
-
--- For polymorphic associations:
-CREATE TABLE comments_p (id serial, commentable_id integer, commentable_type character varying, CONSTRAINT posts_pkey PRIMARY KEY (id));
-
-CREATE TRIGGER update_posts_comments_count
-  AFTER INSERT OR UPDATE ON comments_p
-  FOR EACH ROW
-  WHEN (NEW.commentable_type = 'Post')
-  EXECUTE PROCEDURE update_counter_cache('posts', 'comments_count', 'commentable_id');
-CREATE TRIGGER update_posts_comments_count_on_delete
-  AFTER DELETE ON comments_p
-  FOR EACH ROW
-  WHEN (OLD.favoriteable_type = 'Post')
-  EXECUTE PROCEDURE update_counter_cache('posts', 'comments_count', 'commentable_id');
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 1)::varchar, '0');
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 2)::varchar, '0');
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 3)::varchar, '1');
