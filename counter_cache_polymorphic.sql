@@ -10,5 +10,5 @@ CREATE TRIGGER update_posts_comments_count
 CREATE TRIGGER update_posts_comments_count_on_delete
   AFTER DELETE ON comments_p
   FOR EACH ROW
-  WHEN (OLD.favoriteable_type = 'Post')
+  WHEN (OLD.commentable_type = 'Post')
   EXECUTE PROCEDURE update_counter_cache('posts', 'comments_count', 'commentable_id');
