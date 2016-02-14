@@ -32,16 +32,18 @@ CREATE TRIGGER update_posts_comments_count
   EXECUTE PROCEDURE update_counter_cache('posts', 'comments_count', 'post_id');
 
 -- Test Cases:
-INSERT INTO posts (id) VALUES (1);
-INSERT INTO posts (id) VALUES (2);
-INSERT INTO posts (id) VALUES (3);
+-- http://www.sqlfiddle.com/#!15/88019/1
+
+INSERT INTO posts (id, comments_count) VALUES (1, 0);
+INSERT INTO posts (id, comments_count) VALUES (2, 0);
+INSERT INTO posts (id, comments_count) VALUES (3, 0);
 INSERT INTO comments (id, post_id) VALUES (1, 1);
-INSERT INTO comments (id, post_id) VALUES (1, 2);
-SELECT comments_count FROM posts; -- 1, 1, 0
+INSERT INTO comments (id, post_id) VALUES (2, 2);
+SELECT * FROM posts ORDER BY id; -- 1, 1, 0
 DELETE FROM comments WHERE id = 1;
-SELECT comments_count FROM posts; -- 0, 1, 0
+SELECT * FROM posts ORDER BY id; -- 0, 1, 0
 UPDATE comments SET post_id = 3 WHERE post_id = 2;
-SELECT comments_count FROM posts; -- 0, 0, 1
+SELECT * FROM posts ORDER BY id; -- 0, 0, 1
 
 -- For polymorphic associations:
 CREATE TABLE comments_p (id serial, commentable_id integer, commentable_type character varying, CONSTRAINT posts_pkey PRIMARY KEY (id));
