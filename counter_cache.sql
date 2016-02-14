@@ -32,31 +32,23 @@ CREATE TRIGGER update_posts_comments_count
   EXECUTE PROCEDURE update_counter_cache('posts', 'comments_count', 'post_id');
 
 -- Test Cases:
--- http://www.sqlfiddle.com/#!15/88019/1
-CREATE OR REPLACE FUNCTION assert_equal(a varchar, b varchar) RETURNS varchar AS $$
-  BEGIN
-    IF (a <> b) THEN
-      RAISE EXCEPTION '% not equal to %', a, b;
-    END IF;
-    RETURN 'SUCCESS';
-  END
-$$ LANGUAGE plpgsql;
-
+-- requires test_utilities.sql
+-- http://www.sqlfiddle.com/#!15/c8d5b/5
 INSERT INTO posts (id, comments_count) VALUES (1, 0);
 INSERT INTO posts (id, comments_count) VALUES (2, 0);
 INSERT INTO posts (id, comments_count) VALUES (3, 0);
 INSERT INTO comments (id, post_id) VALUES (1, 1);
 INSERT INTO comments (id, post_id) VALUES (2, 2);
-SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 1)::varchar, '1');
-SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 2)::varchar, '1');
-SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 3)::varchar, '0');
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 1), 1);
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 2), 1);
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 3), 0);
 
 DELETE FROM comments WHERE id = 1;
-SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 1)::varchar, '0');
-SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 2)::varchar, '1');
-SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 3)::varchar, '0');
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 1), 0);
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 2), 1);
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 3), 0);
 
 UPDATE comments SET post_id = 3 WHERE post_id = 2;
-SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 1)::varchar, '0');
-SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 2)::varchar, '0');
-SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 3)::varchar, '1');
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 1), 0);
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 2), 0);
+SELECT assert_equal((SELECT comments_count FROM posts WHERE id = 3), 1);
